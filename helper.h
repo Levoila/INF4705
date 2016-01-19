@@ -8,14 +8,23 @@
 
 struct Inputs
 {
-	Inputs() : N(0), print(false) {}
+	Inputs() : print(false) {}
 
 	std::vector<std::vector<int>> mat1;
 	std::vector<std::vector<int>> mat2;
-	unsigned int N;
 	bool print;
 	unsigned int threshold; //Only used by strassenSeuilCalcule
 };
+
+void printMatrix(const std::vector<std::vector<int>>& m)
+{
+	for (unsigned int y = 0; y < m.size(); ++y) {
+		for (unsigned int x = 0; x < m[0].size(); ++x) {
+			std::cout << m[y][x] << " ";
+		}
+		std::cout << std::endl;
+	}
+}
 
 std::vector<std::vector<int>> readMatrix(const std::string& filename)
 {
