@@ -31,7 +31,7 @@ std::vector<std::vector<int>> readMatrix(const std::string& filename)
 	std::ifstream file(filename);
 	
 	if (!file) {
-		std::cout << "Matrix file " << filename << "does not exist." << std::endl;
+		std::cout << "Matrix file " << filename << " does not exist." << std::endl;
 		return std::vector<std::vector<int>>();
 	}
 	
@@ -72,7 +72,7 @@ Inputs readArgs(int argc, char** argv)
 				continue;
 			}
 			
-			inputs.threshold = atoi(arg.c_str()); //Quick and dirty
+			inputs.threshold = atoi(argv[i+1]); //Quick and dirty
 		}
 	}
 	return inputs;
