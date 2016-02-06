@@ -3,6 +3,7 @@ import os
 import itertools
 import sys
 import csv
+import argparse as ap
 
 #Runs strassenSeuil and returns the time it took to run the algorithm
 def runProgram(m1, m2, threshold):
@@ -11,15 +12,22 @@ def runProgram(m1, m2, threshold):
 def average(l):
 	return sum(l) / len(l)
 
-def runBenchmark(baseThreshold):
+def runBenchmark(baseThreshold, matSizes):
 	thresholds = [baseThreshold >> 2, baseThreshold, baseThreshold << 2, 1 << 30, 1]
-	matSizes = [7, 8, 9, 10, 11]
+	
+	if not matSizes:
+		matSizes = [7, 8, 9, 10, 11]
+		
 	matNumber = 5
 	
 	print('Generating matrices...')
 	filenames = [['mat_' + str(size) + '_' + str(i) + '.txt' for i in range(0, matNumber)] for size in matSizes]
+	print(filenames)
+	matrixNumber = 1;
 	for index, matGroup in enumerate(filenames):
 		for filename in matGroup:
+			print 'Generating matrix', matrixNumber, '/', len(filename)
+			matrixNumber = matrixNumber+1
 			sp.call(['./Gen', str(matSizes[index]), filename])
 	print('Matrix generation done.')
 	
@@ -59,11 +67,26 @@ def findThreshold():
 			bestTime = time
 			bestThreshold = i
 			
-	print 'Best threshold : ', bestThreshold
+	print '########## Best threshold : ', bestThreshold, '##########'
 	
 	#Removing the test matrix
 	sp.call(['rm', 'mat.txt'])
 	
 	return bestThreshold
 	
-runBenchmark(findThreshold())
+
+parser = ap.ArgumentParser(description='Trouver le seuil approprie pour l\'algorithme de Strassen ou lancer un benchmark des performances.')
+parser.add_argument('--threshold', type=int, help='Logarithme en base 2 du seuil de base a utiliser pour le benchmark', default=128)
+parser.add_argument('--findTreshold', action='store_true', help='Trouve le meilleur seuil')
+parser.add_argument('--benchmark', action='store_true', help='Lance un benchmark')
+parser.add_argument('--mSizes', nargs='*', type=int, help='Logarithmes en base 2 des tailles des matrices a tester dans le benchmark')
+
+args = parser.parse_args()
+
+if args.findTreshold:
+	threshold = findThreshold()
+else:
+	threshold = 2**args.threshold
+	
+if args.benchmark:
+	runBenchmark(threshold, args.mSizes);
