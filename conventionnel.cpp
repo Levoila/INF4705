@@ -12,9 +12,10 @@ typedef std::vector<std::vector<int>> Matrix;
 //Assuming same-sized matrices
 void multiply(const Matrix& m1, const Matrix& m2, Matrix& res)
 {
-	for (unsigned int y = 0; y < m1.size(); ++y) {
-		for (unsigned int x = 0; x < m1.size(); ++x) {
-			for (unsigned int i = 0; i < m1.size(); ++i) {
+	unsigned int size = m1.size();
+	for (unsigned int y = 0; y < size; ++y) {
+		for (unsigned int i = 0; i < size; ++i) {
+			for (unsigned int x = 0; x < size; ++x) {
 				res[y][x] += m1[y][i] * m2[i][x];
 			}
 		}
