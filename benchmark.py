@@ -7,8 +7,8 @@ import argparse as ap
 
 #Runs strassenSeuil and returns the time it took to run the algorithm
 def runProgram(m1, m2, threshold):
-	print 'Running ./strasseniSeuil -f', m1, m2, '-s', threshold
-	return float(sp.check_output(['./strassenSeuil', '-f', str(m1), str(m2), '-s', str(threshold)]))
+	print 'Running ./strasseniSeuilCalcule -f', m1, m2, '-s', threshold
+	return float(sp.check_output(['./strassenSeuilCalcule', '-f', str(m1), str(m2), '-s', str(threshold)]))
 	
 def average(l):
 	return sum(l) / len(l)
@@ -77,13 +77,13 @@ def findThreshold():
 
 parser = ap.ArgumentParser(description='Trouver le seuil approprie pour l\'algorithme de Strassen ou lancer un benchmark des performances.')
 parser.add_argument('--threshold', type=int, help='Logarithme en base 2 du seuil de base a utiliser pour le benchmark', default=128)
-parser.add_argument('--findTreshold', action='store_true', help='Trouve le meilleur seuil')
+parser.add_argument('--findThreshold', action='store_true', help='Trouve le meilleur seuil')
 parser.add_argument('--benchmark', action='store_true', help='Lance un benchmark')
 parser.add_argument('--mSizes', nargs='*', type=int, help='Logarithmes en base 2 des tailles des matrices a tester dans le benchmark')
 
 args = parser.parse_args()
 
-if args.findTreshold:
+if args.findThreshold:
 	threshold = findThreshold()
 else:
 	threshold = 2**args.threshold

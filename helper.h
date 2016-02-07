@@ -8,7 +8,7 @@
 
 struct Inputs
 {
-	Inputs() : print(false) {}
+	Inputs() : print(false), threshold(1) {}
 
 	std::vector<std::vector<int>> mat1;
 	std::vector<std::vector<int>> mat2;
