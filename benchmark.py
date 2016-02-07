@@ -7,6 +7,7 @@ import argparse as ap
 
 #Runs strassenSeuil and returns the time it took to run the algorithm
 def runProgram(m1, m2, threshold):
+	print 'Running ./strasseniSeuil -f', m1, m2, '-s', threshold
 	return float(sp.check_output(['./strassenSeuil', '-f', str(m1), str(m2), '-s', str(threshold)]))
 	
 def average(l):
@@ -22,11 +23,10 @@ def runBenchmark(baseThreshold, matSizes):
 	
 	print('Generating matrices...')
 	filenames = [['mat_' + str(size) + '_' + str(i) + '.txt' for i in range(0, matNumber)] for size in matSizes]
-	print(filenames)
 	matrixNumber = 1;
 	for index, matGroup in enumerate(filenames):
 		for filename in matGroup:
-			print 'Generating matrix', matrixNumber, '/', len(filename)
+			print 'Generating matrix', matrixNumber, '/', len(matSizes)*matNumber
 			matrixNumber = matrixNumber+1
 			sp.call(['./Gen', str(matSizes[index]), filename])
 	print('Matrix generation done.')
