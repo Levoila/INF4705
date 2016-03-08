@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{D4CCFE1D-B700-418D-B57B-97EA327EEEBF}</ProjectGuid>
+    <ProjectGuid>{1093C6FF-AA46-40B8-AE19-2759840BF1E9}</ProjectGuid>
     <RootNamespace>TP2</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
