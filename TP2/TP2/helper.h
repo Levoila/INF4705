@@ -10,8 +10,9 @@ enum Algorithm {GREEDY, DYNAMIC, LOCAL};
 
 struct Location
 {
-    int rentability;
+    int revenue;
     unsigned int quantity;
+    unsigned int id;
 };
 struct FileInput
 {
@@ -30,13 +31,31 @@ struct Inputs
 
 FileInput readFile(const std::string& filename)
 {
+    FileInput fileInput;
 
+    std::ifstream fileIn(filename);
+    if (fileIn.is_open())
+    {
+        int nbLocations;
+        fileIn >> nbLocations;
+        fileInput.locations.resize(nbLocations);
+        for (int i = 0; i < nbLocations; ++i){
+            fileIn >> fileInput.locations[i].id >> fileInput.locations[i].revenue >> fileInput.locations[i].quantity;
+        }
+
+        fileIn >> fileInput.capacity;
+    } else {
+        std::cout << "Error reading file: " << filename << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    return fileInput;
 }
 
 Inputs readArgs(int argc, char** argv)
 {
 	Inputs inputs;
-	for (unsigned int i = 1; i < argc; ++i) {
+	for (int i = 1; i < argc; ++i) {
 		std::string arg = std::string(argv[i]);
 		
 		if (arg == "-p") {
