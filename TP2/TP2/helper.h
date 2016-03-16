@@ -22,11 +22,12 @@ struct FileInput
 
 struct Inputs
 {
-	Inputs() : print(false), algorithm(GREEDY) {}
+	Inputs() : print(false), algorithm(GREEDY), benchmark(false) {}
 
     FileInput fileInput;
     Algorithm algorithm;
 	bool print;
+	bool benchmark;
 };
 
 FileInput readFile(const std::string& filename)
@@ -71,8 +72,10 @@ Inputs readArgs(int argc, char** argv)
                 inputs.algorithm = DYNAMIC;
             } else if (algo == "local") {
                 inputs.algorithm = LOCAL;
-            }
-        }
+			}
+		} else if (arg == "-b") {
+			inputs.benchmark = true;
+		}
 	}
 	return inputs;
 }
