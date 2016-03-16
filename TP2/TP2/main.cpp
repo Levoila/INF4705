@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <random>
+#include <iomanip>
+#include <limits>
 
 #include "windows.h"
 
@@ -37,6 +39,7 @@ void remove(std::vector<T>& v, unsigned int index)
     v[index] = v.back();
     v.pop_back();
 }
+
 
 Result greedyAlgorithm(const Inputs& inputs)
 {
@@ -101,17 +104,41 @@ Result dynamicAlgorithm(const Inputs& inputs)
 	for (unsigned int i = 1; i < R.size(); ++i) {
 		double r = inputs.fileInput.locations[i - 1].revenue;
 		double q = inputs.fileInput.locations[i - 1].quantity;
-		double rentability = r / q;
 
 		for (unsigned int j = 1; j < R[0].size(); ++j) {
-			double realQ = min(q, j);
-			double realR = rentability * realQ;
-			R[i][j] = max(realR + R[i-1][j-realQ], R[i-1][j]);
+			R[i][j] = max(r + (j - q < 0 ? -(std::numeric_limits<double>::max)() : R[i - 1][j - q]), R[i - 1][j]);
 		}
 	}
 
 	Result r;
 
+	unsigned int i = R.size() - 1;
+	unsigned int j = R[0].size() - 1;
+
+	r.revenu = R[i][j];
+
+	//Find path
+	while (j != 0 && i != 0) {
+		if (R[i][j] != R[i - 1][j]) {
+			r.locations.push_back(inputs.fileInput.locations[i - 1].id);
+			j -= inputs.fileInput.locations[i - 1].quantity;
+		}
+		--i;
+	}
+
+	return r;
+}
+
+Result localAlgorithm(const Inputs& inputs)
+{
+	Result initial = greedyAlgorithm(inputs);
+
+	while (true) {
+
+	}
+
+	Result r;
+	
 	return r;
 }
 
@@ -137,6 +164,7 @@ int main(int argc, char** argv)
 			r = dynamicAlgorithm(inputs);
             break;
         case Algorithm::LOCAL:
+			r = localAlgorithm(inputs);
             break;
         default:
             std::cout << "Error, unknown algorithm" << std::endl;
@@ -155,6 +183,7 @@ int main(int argc, char** argv)
 			for (auto loc : r.locations) {
 				std::cout << loc << " ";
 			}
+			std::cout << std::endl << "Revenu : " << r.revenu << std::endl;
 		}
 
 		std::cout << "Time : " << elapsed << "s" << std::endl;

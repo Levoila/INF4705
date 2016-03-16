@@ -4,15 +4,15 @@ import csv
 
 programLocation = 'Release/TP2.exe'
 dataLocation = 'BTS/'
-algorithms = ['greedy']#, 'dynamic', 'local']
+#algorithms = ['greedy', 'dynamic', 'local']
+algorithms  = ['dynamic']
 
 def main():
 	filenames, nbFilenames = gatherDataFilenames()
 	
 	nbProcessed = 0
+	timeData = []
 	for algorithm in algorithms:
-		timeData = [['', 'Quantite maximale'], ["Nombre d'emplacements"] + [10, 100, 1000]]
-		revenuData = [['', 'Quantite maximale'], ["Nombre d'emplacements"] + [10, 100, 1000]]
 		for nbLocations in sorted(filenames):
 			timeLine = [nbLocations]
 			revenuLine = [nbLocations]
@@ -26,25 +26,15 @@ def main():
 					filename = os.path.join(dataLocation, filenames[nbLocations][quantityRange][i])
 					out = execute(['./'+programLocation, '-b', '-a', algorithm, '-f', filename])
 					lines = str.splitlines(out.decode('utf-8'))
-					totalRevenu += float(lines[0])
-					totalTime += float(lines[1])
+					revenu = float(lines[0])
+					time = float(lines[1])
+					availableQuantity = int(execute(['tail', '-1', filename]))
 					
-				averageTime = totalTime / len(filenames[nbLocations][quantityRange])
-				averageRevenu = totalRevenu / len(filenames[nbLocations][quantityRange])
-				
-				timeLine.append(averageTime)
-				revenuLine.append(averageRevenu)
-				
-			timeData.append(timeLine)
-			revenuData.append(revenuLine)
+					timeData.append([algorithms.index(algorithm), nbLocations, quantityRange, availableQuantity, time])
 		
 		with open('results_' + algorithm + '_time.csv', 'w', newline='') as file:
 			writer = csv.writer(file, delimiter=',')
 			writer.writerows(timeData)
-			
-		with open('results_' + algorithm + '_revenu.csv', 'w', newline='') as file:
-			writer = csv.writer(file, delimiter=',')
-			writer.writerows(revenuData)
 	
 def gatherDataFilenames():
 	filenames = [filename for filename in os.listdir(dataLocation) if os.path.isfile(os.path.join(dataLocation, filename))]
