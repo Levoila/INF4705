@@ -5,17 +5,15 @@ import csv
 programLocation = 'Release/TP2.exe'
 dataLocation = 'BTS/'
 #algorithms = ['greedy', 'dynamic', 'local']
-algorithms  = ['dynamic']
+algorithms  = ['greedy', 'dynamic']
 
 def main():
 	filenames, nbFilenames = gatherDataFilenames()
 	
 	nbProcessed = 0
-	timeData = []
+	data = []
 	for algorithm in algorithms:
 		for nbLocations in sorted(filenames):
-			timeLine = [nbLocations]
-			revenuLine = [nbLocations]
 			for quantityRange in sorted(filenames[nbLocations]):
 				totalTime = 0
 				totalRevenu = 0
@@ -30,11 +28,11 @@ def main():
 					time = float(lines[1])
 					availableQuantity = int(execute(['tail', '-1', filename]))
 					
-					timeData.append([algorithms.index(algorithm), nbLocations, quantityRange, availableQuantity, time])
+					data.append([algorithms.index(algorithm), nbLocations, quantityRange, availableQuantity, time, revenu])
 		
-		with open('results_' + algorithm + '_time.csv', 'w', newline='') as file:
-			writer = csv.writer(file, delimiter=',')
-			writer.writerows(timeData)
+	with open('results.csv', 'w', newline='') as file:
+		writer = csv.writer(file, delimiter=',')
+		writer.writerows(data)
 	
 def gatherDataFilenames():
 	filenames = [filename for filename in os.listdir(dataLocation) if os.path.isfile(os.path.join(dataLocation, filename))]
