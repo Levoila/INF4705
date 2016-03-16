@@ -17,7 +17,7 @@ unsigned int chooseRandomIndex(const std::vector<float>& rentabilities, float su
     static std::default_random_engine randomEngine(rd());
 
     // Between 0 and sumRentability
-    std::uniform_real_distribution<float> distribution(0.0, sumRentability);
+    std::uniform_real_distribution<float> distribution(0.0f, sumRentability);
     float value = distribution(randomEngine);
     for (unsigned int i = 0; i < numberOfItems; ++i)
     {
@@ -66,24 +66,24 @@ Result greedyAlgorithm(const Inputs& inputs)
         while (true) {
             unsigned int chosenIndex = chooseRandomIndex(tempRentabilities, sumRentability, tempLocations.size());
 
-            chosenLocations.push_back(tempLocations[chosenIndex].id);
-
-            if (remainingCapacity <= tempLocations[chosenIndex].quantity) {
-                totalRevenue += remainingCapacity * tempRentabilities[chosenIndex];
-
+            // If the currently chosen index makes us go over the limit, stop the process
+            if (remainingCapacity < (int)tempLocations[chosenIndex].quantity) {
                 if (totalRevenue > maxRevenue) {
                     maxRevenue = totalRevenue;
                     maxLocations = chosenLocations;
                 }
                 break;
+            } else {
+                // If we reach here, we're sure that we can make the sale
+                chosenLocations.push_back(tempLocations[chosenIndex].id);
+
+                remainingCapacity -= tempLocations[chosenIndex].quantity;
+                sumRentability -= tempRentabilities[chosenIndex];
+                totalRevenue += tempLocations[chosenIndex].revenue;
+
+                remove(tempRentabilities, chosenIndex);
+                remove(tempLocations, chosenIndex);
             }
-
-            remainingCapacity -= tempLocations[chosenIndex].quantity;
-            sumRentability -= tempRentabilities[chosenIndex];
-            totalRevenue += tempLocations[chosenIndex].revenue;
-
-            remove(tempRentabilities, chosenIndex);
-            remove(tempLocations, chosenIndex);
         }
     }
 
