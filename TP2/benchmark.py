@@ -22,7 +22,9 @@ def main():
 					
 					filename = os.path.join(dataLocation, filenames[nbLocations][quantityRange][i])
 					out = execute(['./'+programLocation, '-b', '-a', algorithm, '-f', filename])
-					lines = str.splitlines(out.decode('utf-8'))
+					if type(out) != 'str':
+						out = out.decode('utf-8')
+					lines = str.splitlines(out)
 					revenu = float(lines[0])
 					time = float(lines[1])
 					availableQuantity = int(execute(['tail', '-1', filename]))
