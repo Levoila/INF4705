@@ -7,6 +7,8 @@
 
 #include "windows.h"
 
+#include <set>
+
 struct Result
 {
 	std::vector<unsigned int> locations;
@@ -103,17 +105,17 @@ Result dynamicAlgorithm(const Inputs& inputs)
 
 	for (unsigned int i = 1; i < R.size(); ++i) {
 		int r = inputs.fileInput.locations[i - 1].revenue;
-		unsigned int q = inputs.fileInput.locations[i - 1].quantity;
+		int q = static_cast<int>(inputs.fileInput.locations[i - 1].quantity);
 
-		for (unsigned int j = 1; j < R[0].size(); ++j) {
+		for (int j = 1; j < R[0].size(); ++j) {
 			R[i][j] = max(r + (j - q < 0 ? -(std::numeric_limits<int>::max)() : R[i - 1][j - q]), R[i - 1][j]);
 		}
 	}
 
 	Result r;
 
-	unsigned int i = R.size() - 1;
-	unsigned int j = R[0].size() - 1;
+	int i = R.size() - 1;
+	int j = R[0].size() - 1;
 
 	r.revenu = R[i][j];
 
@@ -142,6 +144,7 @@ int computeRevenu(const Inputs& inputs, const std::vector<unsigned int>& locatio
 			}
 		}
 	}
+
 	return totalQ <= inputs.fileInput.capacity ? totalR : -1;
 }
 
@@ -150,10 +153,14 @@ Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 	Result bestResult = result;
 
 	//Remove 1, put 1 back permutations
-	for (unsigned int i = 0; i < result.locations.size(); ++i) {
-		for (unsigned int j = 0; j < inputs.fileInput.locations.size(); ++j) {
+	for (Location loc : inputs.fileInput.locations) {
+		//If the location is already used.
+		if (std::find(result.locations.begin(), result.locations.end(), loc.id) != result.locations.end()) continue;
+
+		for (unsigned int i = 0; i < result.locations.size(); ++i) {
+
 			std::vector<unsigned int> temp = result.locations;
-			temp[i] = inputs.fileInput.locations[j].id;
+			temp[i] = loc.id;
 
 			int revenu = computeRevenu(inputs, temp);
 			if (revenu > bestResult.revenu) {
@@ -168,10 +175,14 @@ Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 		for (unsigned int i = 0; i < result.locations.size(); ++i) {
 			std::vector<unsigned int> removeOne = result.locations;
 			removeOne.erase(removeOne.begin() + i);
-			for (unsigned int j = 0; j < removeOne.size(); ++j) {
-				for (unsigned int k = 0; k < inputs.fileInput.locations.size(); ++k) {
+
+			for (Location loc : inputs.fileInput.locations) {
+				//If the location is already used.
+				if (std::find(removeOne.begin(), removeOne.end(), loc.id) != removeOne.end()) continue;
+
+				for (unsigned int j = 0; j < removeOne.size(); ++j) {
 					std::vector<unsigned int> temp = removeOne;
-					temp[j] = inputs.fileInput.locations[k].id;
+					temp[j] = loc.id;
 
 					int revenu = computeRevenu(inputs, temp);
 					if (revenu > bestResult.revenu) {
@@ -185,13 +196,20 @@ Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 
 	//Remove 1, put 2 back permutations
 	if (result.locations.size() >= 2) {
-		for (unsigned int i = 0; i < inputs.fileInput.locations.size(); ++i) {
+		for (Location loc1 : inputs.fileInput.locations) {
+			//If the location is already used.
+			if (std::find(result.locations.begin(), result.locations.end(), loc1.id) != result.locations.end()) continue;
+
 			std::vector<unsigned int> addOne = result.locations;
-			addOne.push_back(inputs.fileInput.locations[i].id);
-			for (unsigned int j = 0; j < result.locations.size(); ++j) {
-				for (unsigned int k = 0; k < inputs.fileInput.locations.size(); ++k) {
+			addOne.push_back(loc1.id);
+
+			for (Location loc2 : inputs.fileInput.locations) {
+				//If the location is already used.
+				if (std::find(addOne.begin(), addOne.end(), loc2.id) != addOne.end()) continue;
+
+				for (unsigned int j = 0; j < result.locations.size(); ++j) {
 					std::vector<unsigned int> temp = addOne;
-					temp[j] = inputs.fileInput.locations[k].id;
+					temp[j] = loc2.id;
 
 					int revenu = computeRevenu(inputs, temp);
 					if (revenu > bestResult.revenu) {
@@ -259,7 +277,7 @@ int main(int argc, char** argv)
 	double elapsed = static_cast<double>(end.QuadPart - begin.QuadPart) / frequency.QuadPart;
 
 	if (inputs.benchmark) {
-		std::cout << r.revenu << std::endl << elapsed << std::endl << n;
+		std::cout << r.revenu << std::endl << elapsed;
 	} else {
 		if (inputs.print) {
 			std::cout << "Emplacements : ";
