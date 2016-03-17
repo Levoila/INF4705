@@ -4,104 +4,111 @@
 #include <random>
 #include <iomanip>
 #include <limits>
-
-#include "windows.h"
+#include <algorithm>
 
 #include <set>
 
+#include "windows.h"
+
 struct Result
 {
-	std::vector<unsigned int> locations;
+	std::vector<Location> locations;
+	unsigned int quantity;
 	int revenu;
 };
 
+
 unsigned int chooseRandomIndex(const std::vector<float>& rentabilities, float sumRentability, unsigned int numberOfItems)
 {
-    static std::random_device rd;
-    static std::default_random_engine randomEngine(rd());
+	static std::random_device rd;
+	static std::default_random_engine randomEngine(rd());
 
-    // Between 0 and sumRentability
-    std::uniform_real_distribution<float> distribution(0.0f, sumRentability);
-    float value = distribution(randomEngine);
-    for (unsigned int i = 0; i < numberOfItems; ++i)
-    {
-        value -= rentabilities[i];
-        if (value < 0.0f)
-        {
-            return i;
-        }
-    }
-    // Approximation error
-    return numberOfItems - 1;
+	// Between 0 and sumRentability
+	std::uniform_real_distribution<float> distribution(0.0f, sumRentability);
+	float value = distribution(randomEngine);
+	for (unsigned int i = 0; i < numberOfItems; ++i)
+	{
+		value -= rentabilities[i];
+		if (value < 0.0f)
+		{
+			return i;
+		}
+	}
+	// Approximation error
+	return numberOfItems - 1;
 }
 
 template <typename T>
 void remove(std::vector<T>& v, unsigned int index)
 {
-    v[index] = v.back();
-    v.pop_back();
+	v[index] = v.back();
+	v.pop_back();
 }
 
 
 Result greedyAlgorithm(const Inputs& inputs)
 {
-    std::vector<Location> locations = inputs.fileInput.locations;
-    std::vector<float> rentabilities(inputs.fileInput.locations.size());
+	std::vector<Location> locations = inputs.fileInput.locations;
+	std::vector<float> rentabilities(inputs.fileInput.locations.size());
 
-    float sumRentability = 0.0;
-    for (unsigned int i = 0; i < rentabilities.size(); ++i)
-    {
-        rentabilities[i] = (float)locations[i].revenue / (float)locations[i].quantity;
-        sumRentability += rentabilities[i];
-    }
-    const float totalSumRentability = sumRentability;
+	float sumRentability = 0.0;
+	for (unsigned int i = 0; i < rentabilities.size(); ++i)
+	{
+		rentabilities[i] = (float)locations[i].revenue / (float)locations[i].quantity;
+		sumRentability += rentabilities[i];
+	}
+	const float totalSumRentability = sumRentability;
 
-    std::vector<unsigned int> maxLocations;
-    int maxRevenue = 0;
+	std::vector<Location> maxLocations;
+	int maxRevenue = 0;
+	unsigned int maxQuantity = 0;
 
-    for (unsigned int i = 0; i < 10; ++i) {
-        int remainingCapacity = inputs.fileInput.capacity;
-        int totalRevenue = 0;
-        sumRentability = totalSumRentability;
+	for (unsigned int i = 0; i < 10; ++i) {
+		int remainingCapacity = inputs.fileInput.capacity;
+		int totalRevenue = 0;
+		sumRentability = totalSumRentability;
 
-        std::vector<Location> tempLocations = locations;
-        std::vector<float> tempRentabilities = rentabilities;
-        std::vector<unsigned int> chosenLocations;
+		std::vector<Location> tempLocations = locations;
+		std::vector<float> tempRentabilities = rentabilities;
+		std::vector<Location> chosenLocations;
 
-        while (true) {
-            unsigned int chosenIndex = chooseRandomIndex(tempRentabilities, sumRentability, tempLocations.size());
+		while (true) {
+			unsigned int chosenIndex = chooseRandomIndex(tempRentabilities, sumRentability, tempLocations.size());
 
-            // If the currently chosen index makes us go over the limit, stop the process
-            if (remainingCapacity < (int)tempLocations[chosenIndex].quantity) {
-                if (totalRevenue > maxRevenue) {
-                    maxRevenue = totalRevenue;
-                    maxLocations = chosenLocations;
-                }
-                break;
-            } else {
-                // If we reach here, we're sure that we can make the sale
-                chosenLocations.push_back(tempLocations[chosenIndex].id);
+			// If the currently chosen index makes us go over the limit, stop the process
+			if (remainingCapacity < (int)tempLocations[chosenIndex].quantity) {
+				if (totalRevenue > maxRevenue) {
+					maxRevenue = totalRevenue;
+					maxLocations = chosenLocations;
+					maxQuantity = inputs.fileInput.capacity - remainingCapacity;
+				}
+				break;
+			}
+			else {
+				// If we reach here, we're sure that we can make the sale
+				chosenLocations.push_back(tempLocations[chosenIndex]);
 
-                remainingCapacity -= tempLocations[chosenIndex].quantity;
-                sumRentability -= tempRentabilities[chosenIndex];
-                totalRevenue += tempLocations[chosenIndex].revenue;
+				remainingCapacity -= tempLocations[chosenIndex].quantity;
+				sumRentability -= tempRentabilities[chosenIndex];
+				totalRevenue += tempLocations[chosenIndex].revenue;
 
-                remove(tempRentabilities, chosenIndex);
-                remove(tempLocations, chosenIndex);
-            }
-        }
-    }
+				remove(tempRentabilities, chosenIndex);
+				remove(tempLocations, chosenIndex);
+			}
+		}
+	}
 
 	Result r;
 	r.locations = maxLocations;
 	r.revenu = maxRevenue;
+	r.quantity = maxQuantity;
 
 	return r;
 }
 
 Result dynamicAlgorithm(const Inputs& inputs)
 {
-	std::vector<std::vector<int>> R(inputs.fileInput.locations.size()+1, std::vector<int>(inputs.fileInput.capacity+1, 0));
+	std::vector<std::vector<int>> R(inputs.fileInput.locations.size() + 1, std::vector<int>(inputs.fileInput.capacity + 1, 0));
 
 	for (unsigned int i = 1; i < R.size(); ++i) {
 		int r = inputs.fileInput.locations[i - 1].revenue;
@@ -122,50 +129,44 @@ Result dynamicAlgorithm(const Inputs& inputs)
 	//Find path
 	while (j != 0 && i != 0) {
 		if (R[i][j] != R[i - 1][j]) {
-			r.locations.push_back(inputs.fileInput.locations[i - 1].id);
+			r.locations.push_back(inputs.fileInput.locations[i - 1]);
 			j -= inputs.fileInput.locations[i - 1].quantity;
 		}
 		--i;
 	}
 
+	r.quantity = 0;
+	for (Location l : r.locations)
+		r.quantity += l.quantity;
+
 	return r;
-}
-
-//Returns -1 if the solution is not valid
-int computeRevenu(const Inputs& inputs, const std::vector<unsigned int>& locations)
-{
-	unsigned int totalQ = 0;
-	int totalR = 0;
-	for (unsigned int locId : locations) {
-		for (Location loc : inputs.fileInput.locations) {
-			if (loc.id == locId) {
-				totalQ += loc.quantity;
-				totalR += loc.revenue;
-			}
-		}
-	}
-
-	return totalQ <= inputs.fileInput.capacity ? totalR : -1;
 }
 
 Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 {
 	Result bestResult = result;
 
+	auto choice = inputs.fileInput.locations;
+	//Remove locations that are already in the solution
+	for (Location loc : result.locations)
+		choice.erase(std::remove_if(choice.begin(), choice.end(), [loc](const Location l){ return l.id == loc.id; }));
+
 	//Remove 1, put 1 back permutations
-	for (Location loc : inputs.fileInput.locations) {
-		//If the location is already used.
-		if (std::find(result.locations.begin(), result.locations.end(), loc.id) != result.locations.end()) continue;
-
-		for (unsigned int i = 0; i < result.locations.size(); ++i) {
-
-			std::vector<unsigned int> temp = result.locations;
-			temp[i] = loc.id;
-
-			int revenu = computeRevenu(inputs, temp);
-			if (revenu > bestResult.revenu) {
-				bestResult.locations = temp;
-				bestResult.revenu = revenu;
+	for (unsigned int i = 0; i < result.locations.size(); ++i) {
+		Location locToRemove = result.locations[i];
+		for (Location locToAdd : choice) {
+			unsigned int newQ = result.quantity + locToAdd.quantity - locToRemove.quantity;
+			if (newQ > inputs.fileInput.capacity) {
+				continue;
+			}
+			else {
+				int newR = result.revenu + locToAdd.revenue - locToRemove.revenue;
+				if (newR > bestResult.revenu) {
+					bestResult.locations = result.locations;
+					bestResult.locations[i] = locToAdd;
+					bestResult.revenu = newR;
+					bestResult.quantity = newQ;
+				}
 			}
 		}
 	}
@@ -173,21 +174,26 @@ Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 	//Remove 2, put 1 back permutations
 	if (result.locations.size() >= 2) {
 		for (unsigned int i = 0; i < result.locations.size(); ++i) {
-			std::vector<unsigned int> removeOne = result.locations;
-			removeOne.erase(removeOne.begin() + i);
+			Location locToRemove1 = result.locations[i];
 
-			for (Location loc : inputs.fileInput.locations) {
-				//If the location is already used.
-				if (std::find(removeOne.begin(), removeOne.end(), loc.id) != removeOne.end()) continue;
+			for (unsigned int j = i + 1; j < result.locations.size(); ++j) {
+				Location locToRemove2 = result.locations[j];
 
-				for (unsigned int j = 0; j < removeOne.size(); ++j) {
-					std::vector<unsigned int> temp = removeOne;
-					temp[j] = loc.id;
-
-					int revenu = computeRevenu(inputs, temp);
-					if (revenu > bestResult.revenu) {
-						bestResult.locations = temp;
-						bestResult.revenu = revenu;
+				for (Location locToAdd : choice) {
+					unsigned int newQ = result.quantity + locToAdd.quantity - locToRemove1.quantity - locToRemove2.quantity;
+					if (newQ > inputs.fileInput.capacity) {
+						continue;
+					}
+					else {
+						int newR = result.revenu + locToAdd.revenue - locToRemove1.revenue - locToRemove2.revenue;
+						if (newR > bestResult.revenu) {
+							bestResult.locations = result.locations;
+							bestResult.locations[i] = locToAdd;
+							bestResult.locations[j] = bestResult.locations.back();
+							bestResult.locations.pop_back();
+							bestResult.revenu = newR;
+							bestResult.quantity = newQ;
+						}
 					}
 				}
 			}
@@ -196,27 +202,47 @@ Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 
 	//Remove 1, put 2 back permutations
 	if (result.locations.size() >= 2) {
-		for (Location loc1 : inputs.fileInput.locations) {
-			//If the location is already used.
-			if (std::find(result.locations.begin(), result.locations.end(), loc1.id) != result.locations.end()) continue;
+		for (unsigned int i = 0; i < result.locations.size(); ++i) {
+			Location locToRemove = result.locations[i];
 
-			std::vector<unsigned int> addOne = result.locations;
-			addOne.push_back(loc1.id);
+			for (unsigned int j = 0; j < choice.size(); ++j) {
+				Location locToAdd1 = choice[j];
 
-			for (Location loc2 : inputs.fileInput.locations) {
-				//If the location is already used.
-				if (std::find(addOne.begin(), addOne.end(), loc2.id) != addOne.end()) continue;
+				for (unsigned int k = j + 1; k < choice.size(); ++k) {
+					Location locToAdd2 = choice[k];
 
-				for (unsigned int j = 0; j < result.locations.size(); ++j) {
-					std::vector<unsigned int> temp = addOne;
-					temp[j] = loc2.id;
-
-					int revenu = computeRevenu(inputs, temp);
-					if (revenu > bestResult.revenu) {
-						bestResult.locations = temp;
-						bestResult.revenu = revenu;
+					unsigned int newQ = result.quantity + locToAdd1.quantity + locToAdd2.quantity - locToRemove.quantity;
+					if (newQ > inputs.fileInput.capacity) {
+						continue;
+					}
+					else {
+						int newR = result.revenu + locToAdd1.revenue + locToAdd2.revenue - locToRemove.revenue;
+						if (newR > bestResult.revenu) {
+							bestResult.locations = result.locations;
+							bestResult.locations[i] = locToAdd1;
+							bestResult.locations.push_back(locToAdd2);
+							bestResult.revenu = newR;
+							bestResult.quantity = newQ;
+						}
 					}
 				}
+			}
+		}
+	}
+
+	//Since we can't add locations that were already in the initial result, we can't simply add a location
+	//using "remove 1, put 2 back" permutations. So, we add a special case for simply adding a new location
+	for (Location locToAdd : choice) {
+		unsigned int newQ = result.quantity + locToAdd.quantity;
+		if (newQ > inputs.fileInput.capacity) {
+			continue;
+		} else {
+			int newR = result.revenu + locToAdd.revenue;
+			if (newR > bestResult.revenu) {
+				bestResult.locations = result.locations;
+				bestResult.locations.push_back(locToAdd);
+				bestResult.revenu = newR;
+				bestResult.quantity = newQ;
 			}
 		}
 	}
@@ -224,13 +250,11 @@ Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
 	return bestResult;
 }
 
-unsigned int n = 0;
 Result localAlgorithm(const Inputs& inputs)
 {
 	Result best = greedyAlgorithm(inputs);
 
 	while (true) {
-		++n;
 		Result next = findBestLocalPermutation(inputs, best);
 
 		if (next.revenu <= best.revenu) {
@@ -243,10 +267,47 @@ Result localAlgorithm(const Inputs& inputs)
 	return best;
 }
 
+//Used to debug algorithms
+bool isValid(const Inputs& inputs, const Result& r)
+{
+	std::set<unsigned int> idSet;
+	for (Location loc : r.locations)
+		idSet.insert(loc.id);
+
+	if (idSet.size() != r.locations.size()) {
+		std::cout << "Duplicate IDs in result!\n";
+		return false;
+	}
+
+	unsigned int Q = 0;
+	int R = 0;
+	for (Location loc : r.locations) {
+		Q += loc.quantity;
+		R += loc.revenue;
+	}
+
+	if (Q != r.quantity) {
+		std::cout << "Quantity does not match!\n";
+		return false;
+	}
+
+	if (R != r.revenu) {
+		std::cout << "Revenu does not match! " << R << " vs " << r.revenu << std::endl;
+		return false;
+	}
+
+	if (Q > inputs.fileInput.capacity) {
+		std::cout << "Quantity too big!\n";
+		return false;
+	}
+
+	return true;
+}
+
 
 int main(int argc, char** argv)
 {
-    Inputs inputs = readArgs(argc, argv);
+	Inputs inputs = readArgs(argc, argv);
 
 	LARGE_INTEGER frequency;
 	LARGE_INTEGER begin;
@@ -256,21 +317,21 @@ int main(int argc, char** argv)
 	QueryPerformanceCounter(&begin);
 
 	Result r;
-    switch (inputs.algorithm)
-    {
-        case Algorithm::GREEDY:
-            r = greedyAlgorithm(inputs);
-            break;
-        case Algorithm::DYNAMIC:
-			r = dynamicAlgorithm(inputs);
-            break;
-        case Algorithm::LOCAL:
-			r = localAlgorithm(inputs);
-            break;
-        default:
-            std::cout << "Error, unknown algorithm" << std::endl;
-            break;
-    }
+	switch (inputs.algorithm)
+	{
+	case Algorithm::GREEDY:
+		r = greedyAlgorithm(inputs);
+		break;
+	case Algorithm::DYNAMIC:
+		r = dynamicAlgorithm(inputs);
+		break;
+	case Algorithm::LOCAL:
+		r = localAlgorithm(inputs);
+		break;
+	default:
+		std::cout << "Error, unknown algorithm" << std::endl;
+		break;
+	}
 
 	QueryPerformanceCounter(&end);
 
@@ -278,15 +339,16 @@ int main(int argc, char** argv)
 
 	if (inputs.benchmark) {
 		std::cout << r.revenu << std::endl << elapsed;
-	} else {
+	}
+	else {
 		if (inputs.print) {
 			std::cout << "Emplacements : ";
 			for (auto loc : r.locations) {
-				std::cout << loc << " ";
+				std::cout << loc.id << " ";
 			}
 			std::cout << std::endl << "Revenu : " << r.revenu << std::endl;
 		}
 
-		std::cout << "Time : " << elapsed << "s" << std::endl;
+		std::cout << "Temps : " << elapsed << "s" << std::endl;
 	}
 }
