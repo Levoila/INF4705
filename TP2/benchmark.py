@@ -4,8 +4,7 @@ import csv
 
 programLocation = 'Release/TP2.exe'
 dataLocation = 'BTS/'
-#algorithms = ['greedy', 'dynamic', 'local']
-algorithms  = ['greedy', 'dynamic']
+algorithms = ['greedy', 'dynamic', 'local']
 
 def main():
 	filenames, nbFilenames = gatherDataFilenames()

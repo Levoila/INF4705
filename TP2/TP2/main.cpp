@@ -10,7 +10,7 @@
 struct Result
 {
 	std::vector<unsigned int> locations;
-	double revenu;
+	int revenu;
 };
 
 unsigned int chooseRandomIndex(const std::vector<float>& rentabilities, float sumRentability, unsigned int numberOfItems)
@@ -55,11 +55,11 @@ Result greedyAlgorithm(const Inputs& inputs)
     const float totalSumRentability = sumRentability;
 
     std::vector<unsigned int> maxLocations;
-    float maxRevenue = 0.0;
+    int maxRevenue = 0;
 
     for (unsigned int i = 0; i < 10; ++i) {
         int remainingCapacity = inputs.fileInput.capacity;
-        float totalRevenue = 0;
+        int totalRevenue = 0;
         sumRentability = totalSumRentability;
 
         std::vector<Location> tempLocations = locations;
@@ -99,14 +99,14 @@ Result greedyAlgorithm(const Inputs& inputs)
 
 Result dynamicAlgorithm(const Inputs& inputs)
 {
-	std::vector<std::vector<double>> R(inputs.fileInput.locations.size()+1, std::vector<double>(inputs.fileInput.capacity+1, 0.0));
+	std::vector<std::vector<int>> R(inputs.fileInput.locations.size()+1, std::vector<int>(inputs.fileInput.capacity+1, 0));
 
 	for (unsigned int i = 1; i < R.size(); ++i) {
-		double r = inputs.fileInput.locations[i - 1].revenue;
-		double q = inputs.fileInput.locations[i - 1].quantity;
+		int r = inputs.fileInput.locations[i - 1].revenue;
+		unsigned int q = inputs.fileInput.locations[i - 1].quantity;
 
 		for (unsigned int j = 1; j < R[0].size(); ++j) {
-			R[i][j] = max(r + (j - q < 0 ? -(std::numeric_limits<double>::max)() : R[i - 1][j - q]), R[i - 1][j]);
+			R[i][j] = max(r + (j - q < 0 ? -(std::numeric_limits<int>::max)() : R[i - 1][j - q]), R[i - 1][j]);
 		}
 	}
 
@@ -129,17 +129,100 @@ Result dynamicAlgorithm(const Inputs& inputs)
 	return r;
 }
 
-Result localAlgorithm(const Inputs& inputs)
+//Returns -1 if the solution is not valid
+int computeRevenu(const Inputs& inputs, const std::vector<unsigned int>& locations)
 {
-	Result initial = greedyAlgorithm(inputs);
+	unsigned int totalQ = 0;
+	int totalR = 0;
+	for (unsigned int locId : locations) {
+		for (Location loc : inputs.fileInput.locations) {
+			if (loc.id == locId) {
+				totalQ += loc.quantity;
+				totalR += loc.revenue;
+			}
+		}
+	}
+	return totalQ <= inputs.fileInput.capacity ? totalR : -1;
+}
 
-	while (true) {
+Result findBestLocalPermutation(const Inputs& inputs, const Result& result)
+{
+	Result bestResult = result;
 
+	//Remove 1, put 1 back permutations
+	for (unsigned int i = 0; i < result.locations.size(); ++i) {
+		for (unsigned int j = 0; j < inputs.fileInput.locations.size(); ++j) {
+			std::vector<unsigned int> temp = result.locations;
+			temp[i] = inputs.fileInput.locations[j].id;
+
+			int revenu = computeRevenu(inputs, temp);
+			if (revenu > bestResult.revenu) {
+				bestResult.locations = temp;
+				bestResult.revenu = revenu;
+			}
+		}
 	}
 
-	Result r;
-	
-	return r;
+	//Remove 2, put 1 back permutations
+	if (result.locations.size() >= 2) {
+		for (unsigned int i = 0; i < result.locations.size(); ++i) {
+			std::vector<unsigned int> removeOne = result.locations;
+			removeOne.erase(removeOne.begin() + i);
+			for (unsigned int j = 0; j < removeOne.size(); ++j) {
+				for (unsigned int k = 0; k < inputs.fileInput.locations.size(); ++k) {
+					std::vector<unsigned int> temp = removeOne;
+					temp[j] = inputs.fileInput.locations[k].id;
+
+					int revenu = computeRevenu(inputs, temp);
+					if (revenu > bestResult.revenu) {
+						bestResult.locations = temp;
+						bestResult.revenu = revenu;
+					}
+				}
+			}
+		}
+	}
+
+	//Remove 1, put 2 back permutations
+	if (result.locations.size() >= 2) {
+		for (unsigned int i = 0; i < inputs.fileInput.locations.size(); ++i) {
+			std::vector<unsigned int> addOne = result.locations;
+			addOne.push_back(inputs.fileInput.locations[i].id);
+			for (unsigned int j = 0; j < result.locations.size(); ++j) {
+				for (unsigned int k = 0; k < inputs.fileInput.locations.size(); ++k) {
+					std::vector<unsigned int> temp = addOne;
+					temp[j] = inputs.fileInput.locations[k].id;
+
+					int revenu = computeRevenu(inputs, temp);
+					if (revenu > bestResult.revenu) {
+						bestResult.locations = temp;
+						bestResult.revenu = revenu;
+					}
+				}
+			}
+		}
+	}
+
+	return bestResult;
+}
+
+unsigned int n = 0;
+Result localAlgorithm(const Inputs& inputs)
+{
+	Result best = greedyAlgorithm(inputs);
+
+	while (true) {
+		++n;
+		Result next = findBestLocalPermutation(inputs, best);
+
+		if (next.revenu <= best.revenu) {
+			break;
+		} else {
+			best = next;
+		}
+	}
+
+	return best;
 }
 
 
@@ -176,7 +259,7 @@ int main(int argc, char** argv)
 	double elapsed = static_cast<double>(end.QuadPart - begin.QuadPart) / frequency.QuadPart;
 
 	if (inputs.benchmark) {
-		std::cout << r.revenu << std::endl << elapsed;
+		std::cout << r.revenu << std::endl << elapsed << std::endl << n;
 	} else {
 		if (inputs.print) {
 			std::cout << "Emplacements : ";
