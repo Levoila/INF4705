@@ -5,10 +5,8 @@
 #include <iomanip>
 #include <limits>
 #include <algorithm>
-
+#include <chrono>
 #include <set>
-
-#include "windows.h"
 
 struct Result
 {
@@ -115,7 +113,7 @@ Result dynamicAlgorithm(const Inputs& inputs)
 		int q = static_cast<int>(inputs.fileInput.locations[i - 1].quantity);
 
 		for (int j = 1; j < R[0].size(); ++j) {
-			R[i][j] = max(r + (j - q < 0 ? -(std::numeric_limits<int>::max)() : R[i - 1][j - q]), R[i - 1][j]);
+			R[i][j] = std::max(r + (j - q < 0 ? -(std::numeric_limits<int>::max)() : R[i - 1][j - q]), R[i - 1][j]);
 		}
 	}
 
@@ -309,12 +307,7 @@ int main(int argc, char** argv)
 {
 	Inputs inputs = readArgs(argc, argv);
 
-	LARGE_INTEGER frequency;
-	LARGE_INTEGER begin;
-	LARGE_INTEGER end;
-
-	QueryPerformanceFrequency(&frequency);
-	QueryPerformanceCounter(&begin);
+	auto begin = std::chrono::high_resolution_clock::now();
 
 	Result r;
 	switch (inputs.algorithm)
@@ -333,9 +326,8 @@ int main(int argc, char** argv)
 		break;
 	}
 
-	QueryPerformanceCounter(&end);
-
-	double elapsed = static_cast<double>(end.QuadPart - begin.QuadPart) / frequency.QuadPart;
+	auto end = std::chrono::high_resolution_clock::now();
+	double elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() / 1000000000.0;
 
 	if (inputs.benchmark) {
 		std::cout << r.revenu << std::endl << elapsed;
