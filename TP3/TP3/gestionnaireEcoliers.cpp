@@ -1,11 +1,12 @@
 #include "gestionnaireEcoliers.h"
 
-#include <fstream>  //std::ifstream
-#include <iostream> //std::cout
-#include <chrono>   //std::chrono
+#include <fstream>      //std::ifstream
+#include <iostream>     //std::cout
+#include <chrono>       //std::chrono
+#include <algorithm>    //std::max
 
 GestionnaireEcoliers::GestionnaireEcoliers(int argc, char** argv)
-    :_print(false), _benchmark(false)
+    :_print(false), _benchmark(false), _solutionFound(false)
 {
     // Parse inputs
     std::string filename;
@@ -29,17 +30,20 @@ GestionnaireEcoliers::GestionnaireEcoliers(int argc, char** argv)
     {
         fileIn >> _nbEcoliers >> _nbPairesValides;
 
-        _ecoliers = new Ecolier[_nbEcoliers];
+        _chaines.resize(_nbEcoliers);
 
-        // Fill the two tables
+        // Fill _chaines vector
+        Ecolier tempEcolier;
         for (unsigned int i = 0; i < _nbEcoliers; ++i)
         {
-            _ecoliers[i].index = i;
-            _ecoliers[i].frontEcolierIndex = 0;
-            _ecoliers[i].backEcolierIndex = 0;
-            fileIn >> _ecoliers[i].height;
+            tempEcolier.index = i;
+            tempEcolier.frontEcolierIndex = 0;
+            tempEcolier.backEcolierIndex = 0;
+            fileIn >> tempEcolier.height;
+            _chaines[i] = ChaineEcoliers(tempEcolier);
         }
 
+        // Fill the _pairesValides table
         unsigned int tempValide1 = 0;
         unsigned int tempValide2 = 0;
         _pairesValides = new std::pair<unsigned int, unsigned int>[_nbPairesValides];
@@ -56,7 +60,6 @@ GestionnaireEcoliers::GestionnaireEcoliers(int argc, char** argv)
 
 GestionnaireEcoliers::~GestionnaireEcoliers()
 {
-    delete(_ecoliers);
     delete(_pairesValides);
 }
 
@@ -69,130 +72,37 @@ unsigned int GestionnaireEcoliers::getMostRestrained(unsigned int*& possibleNeig
     unsigned int mostRestrained = 0;
     unsigned int tempMostRestrainedAmount = -1; // The goal is to get the one with the least amount of neighbours, so we start at max(unsigned int) and minimize
 
-    for (unsigned int i = 0; i < _nbEcoliers; ++i)
+    for (unsigned int i = 0; i < _chaines.size(); ++i)
     {
-        if ( !(_ecoliers[i].isLinked()) && (possibleNeighboursAmount[i] < tempMostRestrainedAmount) )
-        {
-            tempMostRestrainedAmount = possibleNeighboursAmount[i];
-            mostRestrained = i;
-        }
+        /*Idea:
+        1- Get the front/back students of the sub-chain
+        2- Get the possible neighbours for each ^
+        3- Decide if we merge 1->2 or 2->1 and merge them
+        */
     }
+    std::cout << "Most Restrained: " << mostRestrained << std::endl;
     return mostRestrained;
 }
 
-/* GestionnaireEcoliers::getClosestShorterTaller
-    Receives the student to compare to and a list of possible neighbours
-    Returns the shorter/taller neighbours that are as close as possible to his height
-*/
-std::pair<unsigned int, unsigned int> GestionnaireEcoliers::getClosestShorterTaller(const Ecolier& ecolier, const std::vector<Ecolier>& possibleNeighbours)
+void GestionnaireEcoliers::calculateHidden()
 {
-    unsigned int currShorterIndex = 0;
-    unsigned int currShorterHeight = 0;
-    unsigned int currTallerIndex = 0;
-    unsigned int currTallerHeight = 0; // unsigned -1 == max(unsigned int)
+    _nbCaches = 0;
+    std::vector<Ecolier> listeEcoliers = _chaines[0].getListeEcoliers();
+    unsigned int currentTallestStudent = listeEcoliers[0].height;
 
-    unsigned int tempHeight = 0;
-
-    for (unsigned int i = 0; i < possibleNeighbours.size(); ++i)
+    // For _nbEcoliers - 1 because we start with one student outside the loop
+    for (unsigned int i = 1; i < listeEcoliers.size(); ++i)
     {
-        // possibleNeighbours contains the index of the neighbours, so we go get their height from tailleEcoliers_
-        tempHeight = possibleNeighbours[i].height;
-
-        // Currently checked neighbour is taller than me but smaller than the currently assigned possible neighbour
-        if (tempHeight > ecolier.height && possibleNeighbours[i].frontEcolierIndex == 0 && tempHeight < currTallerHeight)
+        // The current student is blocked by the currently tallest student
+        if (currentTallestStudent > listeEcoliers[i].height)
         {
-            currTallerIndex = possibleNeighbours[i].index;
-            currTallerHeight = tempHeight;
+            ++_nbCaches;
         }
-        // Currently checked neighbour is shorter than me but smaller than the currently assigned possible neighbour
-        else if (tempHeight < ecolier.height && possibleNeighbours[i].backEcolierIndex == 0 && tempHeight > currShorterHeight)
+        else
         {
-            currShorterIndex = possibleNeighbours[i].index;
-            currShorterHeight = tempHeight;
+            currentTallestStudent = listeEcoliers[i].height;
         }
     }
-    return std::pair<unsigned int, unsigned int>(currShorterIndex, currTallerIndex);
-}
-
-unsigned int GestionnaireEcoliers::getFrontStudent(const Ecolier& ecolier, const std::vector<Ecolier>& possibleNeighbours)
-{
-    unsigned int currShorterIndex = 0;
-    unsigned int currShorterHeight = 0;
-    unsigned int currTallerIndex = 0;
-    unsigned int currTallerHeight = 0; // unsigned -1 == max(unsigned int)
-
-    unsigned int tempHeight = 0;
-
-    for (unsigned int i = 0; i < possibleNeighbours.size(); ++i)
-    {
-        // possibleNeighbours contains the index of the neighbours, so we go get their height from tailleEcoliers_
-        tempHeight = possibleNeighbours[i].height;
-
-        // Currently checked neighbour is taller than me but smaller than the currently assigned possible neighbour
-        if (tempHeight > ecolier.height && possibleNeighbours[i].frontEcolierIndex == 0 && tempHeight < currTallerHeight)
-        {
-            currTallerIndex = possibleNeighbours[i].index;
-            currTallerHeight = tempHeight;
-        }
-        // Currently checked neighbour is shorter than me but smaller than the currently assigned possible neighbour
-        else if (tempHeight < ecolier.height && possibleNeighbours[i].backEcolierIndex == 0 && tempHeight > currShorterHeight)
-        {
-            currShorterIndex = possibleNeighbours[i].index;
-            currShorterHeight = tempHeight;
-        }
-    }
-
-    if (currShorterIndex == 0)
-    {
-        return currShorterIndex;
-    }
-    return currTallerIndex;
-}
-
-unsigned int GestionnaireEcoliers::getBackStudent(const Ecolier& ecolier, const std::vector<Ecolier>& possibleNeighbours)
-{
-    unsigned int currShorterIndex = 0;
-    unsigned int currShorterHeight = 0;
-    unsigned int currTallerIndex = 0;
-    unsigned int currTallerHeight = 0; // unsigned -1 == max(unsigned int)
-
-    unsigned int tempHeight = 0;
-
-    for (unsigned int i = 0; i < possibleNeighbours.size(); ++i)
-    {
-        // possibleNeighbours contains the index of the neighbours, so we go get their height from tailleEcoliers_
-        tempHeight = possibleNeighbours[i].height;
-
-        // Currently checked neighbour is taller than me but smaller than the currently assigned possible neighbour
-        if (tempHeight > ecolier.height && possibleNeighbours[i].frontEcolierIndex == 0 && tempHeight < currTallerHeight)
-        {
-            currTallerIndex = possibleNeighbours[i].index;
-            currTallerHeight = tempHeight;
-        }
-        // Currently checked neighbour is shorter than me but smaller than the currently assigned possible neighbour
-        else if (tempHeight < ecolier.height && possibleNeighbours[i].backEcolierIndex == 0 && tempHeight > currShorterHeight)
-        {
-            currShorterIndex = possibleNeighbours[i].index;
-            currShorterHeight = tempHeight;
-        }
-    }
-
-    if (currTallerIndex == 0)
-    {
-        return currTallerIndex;
-    }
-    return currShorterIndex;
-}
-
-void GestionnaireEcoliers::linkEcoliers(Ecolier front, Ecolier back)
-{
-    front.backEcolierIndex = back.index;
-    back.frontEcolierIndex = front.index;
-}
-
-Ecolier GestionnaireEcoliers::getEcolier(unsigned int index)
-{
-    return _ecoliers[index - 1];
 }
 
 void GestionnaireEcoliers::calculerSolution()
@@ -213,48 +123,12 @@ void GestionnaireEcoliers::calculerSolution()
 
     while (!_solutionFound)
     {
-        /* Get the most restrained student */
-        unsigned int chosenIndex = getMostRestrained(possibleNeighbours);
-
-        // Index - 1 because Ecolier.index is from 1 to _nbEcoliers
-        //   -> _ecoliers[X] == _ecoliers[X].index - 1
-        Ecolier chosenEcolier = getEcolier(chosenIndex);
-
-        /* Get the student's possible neighbours */
-        std::vector<Ecolier> studentPossibleNeighbours;
-        for (unsigned int i = 0; i < _nbPairesValides; ++i)
-        {
-            if (_pairesValides[i].first == chosenEcolier.index)
-            {
-                studentPossibleNeighbours.push_back(getEcolier(_pairesValides[i].second));
-            }
-            else if (_pairesValides[i].second == chosenEcolier.index)
-            {
-                studentPossibleNeighbours.push_back(getEcolier(_pairesValides[i].first));
-            }
-        }
-
-        std::pair<unsigned int, unsigned int> bothStudentsIndex;
-        unsigned int chosenStudentIndex;
-        switch (chosenEcolier.getNeighboursNeeded())
-        {
-        case NEED_BOTH:
-            bothStudentsIndex = getClosestShorterTaller(chosenEcolier, studentPossibleNeighbours);
-            linkEcoliers(getEcolier(bothStudentsIndex.first), chosenEcolier);
-            linkEcoliers(chosenEcolier, getEcolier(bothStudentsIndex.second));
-            break;
-        case NEED_FRONT:
-            chosenStudentIndex = getFrontStudent(chosenEcolier, studentPossibleNeighbours);
-            linkEcoliers(getEcolier(chosenStudentIndex), chosenEcolier);
-            break;
-        case NEED_BACK:
-            chosenStudentIndex = getFrontStudent(chosenEcolier, studentPossibleNeighbours);
-            linkEcoliers(chosenEcolier, getEcolier(chosenStudentIndex));
-            break;
-        case NEED_NONE:
-        default:
-            break;
-        }
+        /*Idea:
+            1- Get the most restrained student /sub-chain
+            2- Get the possible neighbours / sub-chains
+            3- Decide if we merge 1->2 or 2->1 and merge them
+            4- Update the restrained table, sub-chains vector, etc.
+        */
     }
 
     auto end = std::chrono::high_resolution_clock::now();

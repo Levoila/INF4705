@@ -142,10 +142,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="chaineEcoliers.cpp" />
     <ClCompile Include="..\..\..\..\..\INF4705 - Analyse et Conception d%27Algorithmes\TPs\INF4705\TP3\TP3\gestionnaireEcoliers.cpp" />
     <ClCompile Include="..\..\..\..\..\INF4705 - Analyse et Conception d%27Algorithmes\TPs\INF4705\TP3\TP3\main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\INF4705 - Analyse et Conception d%27Algorithmes\TPs\INF4705\TP3\TP3\chaineEcoliers.h" />
     <ClInclude Include="..\..\..\..\..\INF4705 - Analyse et Conception d%27Algorithmes\TPs\INF4705\TP3\TP3\gestionnaireEcoliers.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
