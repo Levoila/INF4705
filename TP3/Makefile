@@ -3,7 +3,7 @@ CC     =  gcc
 CFLAGS =   -Wall -pipe -O3
 
 all: lib
-	g++ main.cpp -std=c++11 -L lib/ -l graph -o out
+	g++ main.cpp -std=c++11 -L lib/ -l graph -lpthread -o rang
 
 Graph.o: Graph.c Arch.h Graph.h
 
@@ -20,4 +20,4 @@ lib: $(graph_algs)
 	ar -cvq lib/libgraph.a *.o
 
 clean:
-	rm -f *.o out
+	rm -f *.o rang
